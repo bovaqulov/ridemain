@@ -1,0 +1,60 @@
+services:
+  # Django application
+  web:
+    build: .
+    container_name: journey_web
+    command: >
+      sh -c "python manage.py makemigrations &&
+             python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 rideNow.wsgi:application"
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - journey_network
+
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: journey_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - journey_network
+
+  # Celery worker
+  celery_worker:
+    build: .
+    container_name: journey_celery_worker
+    command: celery -A journey_project worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - journey_network
+
+
+volumes:
+  static_volume:
+  media_volume:
+
+networks:
+  journey_network:
+    driver: bridge

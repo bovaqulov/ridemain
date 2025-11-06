@@ -25,7 +25,10 @@ SECRET_KEY = "django-insecure-d0#@=jkh^%4dh96%%+b!j$#^6p^s-fg@@dze64mbh4in@*s0uf
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+]
 
 
 # Application definition
@@ -38,6 +41,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'journey.apps.JourneyConfig',
+    "rest_framework",
+    "django_filters"
 ]
 
 MIDDLEWARE = [
@@ -122,3 +127,21 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# settings.py qismiga qo'shing
+ADMIN_ORDERING = [
+    ('locations', [
+        'Location',
+        'UserLocation',
+    ]),
+]
+
+# Agar kerak bo'lsa, custom admin template qo'shish
+ADMIN_SITE_HEADER = "Lokatsiya Maʼlumotlari Boshqaruvi"
+APPEND_SLASH=False
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+}

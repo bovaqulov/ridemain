@@ -1,64 +1,56 @@
+# models.py
 from django.db import models
-from geopy.geocoders import Nominatim
-from functools import lru_cache
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Location(models.Model):
-    name = models.CharField(max_length=100)
-    coordinate = models.JSONField(default=dict, unique=True)  # {"lat": float, "lng": float}
+    name = models.CharField(max_length=255)
+    lat = models.FloatField()
+    lng = models.FloatField()
     is_available = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Joylashuv"
         verbose_name_plural = "Joylashuvlar"
-
-    # =========================================================
-    # 🔹 Caching bilan geografik tekshiruv
-    # =========================================================
-    @staticmethod
-    @lru_cache(maxsize=1000)
-    def _is_in_uzbekistan_cached(lat, lng):
-        """Nominatim orqali joylashuvni bir marta tekshiradi va cache qiladi."""
-        geolocator = Nominatim(user_agent="uzbekistan_validator_cache")
-        try:
-            location = geolocator.reverse((lat, lng), language="en")
-            if location and "address" in location.raw:
-                country_code = location.raw["address"].get("country_code", "").upper()
-                return country_code == "UZ"
-        except Exception:
-            pass
-        return False
-
-    def clean(self):
-        """O‘zbekiston hududida joylashganligini aniqlaydi (xato chiqarmaydi)."""
-        lat = self.coordinate.get("lat")
-        lng = self.coordinate.get("lng")
-
-        if lat is None or lng is None:
-            self.is_available = False
-            return
-
-        self.is_available = self._is_in_uzbekistan_cached(lat, lng)
-
-    def save(self, *args, **kwargs):
-        """Joylashuvni O‘zbekiston ichida yoki tashqarisida saqlaydi."""
-        lat = self.coordinate.get("lat")
-        lng = self.coordinate.get("lng")
-
-        # Cache orqali tekshiruv
-        self.is_available = self._is_in_uzbekistan_cached(lat, lng) if lat and lng else False
-
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def create_loc(cls, address, latitude, longitude):
-        print(f"Creating location: {address}")
-        return cls.objects.create(
-            name=address,
-            coordinate={"lat": latitude, "lng": longitude},
-        )
+        unique_together = ['lat', 'lng']  # Bir xil koordinatali locationlar qayta yaratilmasligi uchun
+        indexes = [
+            models.Index(fields=['lat', 'lng']),
+            models.Index(fields=['is_available']),
+        ]
 
     def __str__(self):
-        lat = self.coordinate.get("lat")
-        lng = self.coordinate.get("lng")
-        return f"{self.name} ({lat}, {lng})"
+        return f"{self.name} ({self.lat:.6f}, {self.lng:.6f})"
+
+    @property
+    def coordinate(self):
+        """Coordinate ni JSON formatida qaytarish"""
+        return {"lat": self.lat, "lng": self.lng}
+
+
+class UserLocation(models.Model):
+    user = models.BigIntegerField(db_index=True)  # Telegram ID
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='user_locations')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Qo'shimcha ma'lumotlar
+    accuracy = models.FloatField(null=True, blank=True)  # Lokatsiya aniqligi
+    live_period = models.IntegerField(null=True, blank=True)  # Live location period
+    heading = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(360)]
+    )  # Yo'nalish (0-360)
+
+    class Meta:
+        verbose_name = "Foydalanuvchi joylashuvi"
+        verbose_name_plural = "Foydalanuvchi joylashuvlari"
+        ordering = ['-created_at']
+        unique_together = ['location']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"User {self.user} at {self.location.name}"
