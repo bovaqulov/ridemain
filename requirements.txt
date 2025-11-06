@@ -6,6 +6,8 @@ django-stubs-ext==5.2.7
 djangorestframework==3.16.1
 geographiclib==2.1
 geopy==2.4.1
+gunicorn==23.0.0
+packaging==25.0
 sqlparse==0.5.3
 tomli==2.3.0
 types-PyYAML==6.0.12.20250915
