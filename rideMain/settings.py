@@ -148,3 +148,12 @@ REST_FRAMEWORK = {
     ),
 }
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+CSRF_TRUSTED_ORIGINS = [
+    "ridemain-production.up.railway.app",
+]
+
+# (Ixtiyoriy, agar siz boshqa domenlardan so‘rov yuborayotgan bo‘lsangiz)
+CORS_ALLOWED_ORIGINS = [
+    "ridemain-production.up.railway.app",
+]
