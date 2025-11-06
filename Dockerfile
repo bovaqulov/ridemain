@@ -13,7 +13,7 @@ RUN apt-get update \
         build-essential \
         libpq-dev \
         curl \
-        netcat \
+        netcat-openbsd \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Create static files directory
+# Create static and media directories
 RUN mkdir -p /app/static /app/media
 
 # Create and switch to non-root user

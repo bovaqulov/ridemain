@@ -1,13 +1,13 @@
+version: '3.9'
+
 services:
   # Django application
   web:
     build: .
     container_name: journey_web
     command: >
-      sh -c "python manage.py makemigrations &&
-             python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             gunicorn --bind 0.0.0.0:8000 --workers 4 rideNow.wsgi:application"
+      sh -c "python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 rideMain.wsgi:application"
     volumes:
       - .:/app
       - static_volume:/app/static
@@ -23,6 +23,19 @@ services:
     networks:
       - journey_network
 
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    container_name: journey_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - journey_network
 
   # Redis
   redis:
@@ -38,7 +51,7 @@ services:
   celery_worker:
     build: .
     container_name: journey_celery_worker
-    command: celery -A journey_project worker --loglevel=info
+    command: celery -A rideMain worker --loglevel=info
     volumes:
       - .:/app
     env_file:
@@ -50,10 +63,10 @@ services:
     networks:
       - journey_network
 
-
 volumes:
   static_volume:
   media_volume:
+  postgres_data:
 
 networks:
   journey_network:
