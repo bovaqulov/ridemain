@@ -12,3 +12,4 @@ sqlparse==0.5.3
 tomli==2.3.0
 types-PyYAML==6.0.12.20250915
 typing_extensions==4.15.0
+whitenoise==6.11.0
